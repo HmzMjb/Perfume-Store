@@ -1,8 +1,33 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Globe, MessageCircle, Heart, Mail, Phone, MapPin, ArrowUp } from "lucide-react";
 
 export default function Footer() {
   const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
+  const [email, setEmail] = useState("");
+  const [subscribed, setSubscribed] = useState(false);
+  const [subscribing, setSubscribing] = useState(false);
+
+  const handleSubscribe = async (e) => {
+    e.preventDefault();
+    if (!email.trim() || subscribing) return;
+    setSubscribing(true);
+    try {
+      const res = await fetch("/api/newsletter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (res.ok) {
+        setSubscribed(true);
+        setEmail("");
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSubscribing(false);
+    }
+  };
 
   return (
     <footer className="bg-text-primary text-white relative">
@@ -20,14 +45,28 @@ export default function Footer() {
               </p>
             </div>
             <div className="flex w-full lg:w-auto">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                className="flex-1 lg:w-96 px-6 py-4 bg-white/5 border border-white/15 rounded-l-full text-white placeholder-white/30 focus:outline-none focus:border-primary transition-colors text-sm"
-              />
-              <button className="px-8 py-4 bg-primary text-white rounded-r-full hover:bg-primary-dark transition-colors font-medium text-sm tracking-wider">
-                Subscribe
-              </button>
+              {subscribed ? (
+                <div className="px-6 py-4 text-sage font-medium text-sm">
+                  Thanks for subscribing!
+                </div>
+              ) : (
+                <>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter your email"
+                    className="flex-1 lg:w-96 px-6 py-4 bg-white/5 border border-white/15 rounded-l-full text-white placeholder-white/30 focus:outline-none focus:border-primary transition-colors text-sm"
+                  />
+                  <button
+                    onClick={handleSubscribe}
+                    disabled={subscribing}
+                    className="px-8 py-4 bg-primary text-white rounded-r-full hover:bg-primary-dark transition-colors font-medium text-sm tracking-wider disabled:opacity-50"
+                  >
+                    {subscribing ? "..." : "Subscribe"}
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>

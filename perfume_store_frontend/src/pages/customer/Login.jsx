@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
 export default function Login() {
   const { user, googleLogin } = useAuth();
   const navigate = useNavigate();
   const [clientId, setClientId] = useState("");
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (user) navigate("/");
@@ -28,7 +29,7 @@ export default function Login() {
           await googleLogin(response.credential);
           navigate("/");
         } catch (err) {
-          console.error("Login failed:", err);
+          setError(err.message || "Google login failed");
         }
       },
     });
@@ -44,10 +45,16 @@ export default function Login() {
       <div className="w-full max-w-md mx-4">
         <div className="text-center mb-8">
           <h1 className="font-heading text-4xl mb-2">Welcome Back</h1>
-          <p className="text-text-secondary">Sign in to your account</p>
+          <p className="text-text-secondary">Sign in with your Google account</p>
         </div>
 
         <div className="bg-bg-secondary rounded-2xl p-8">
+          {error && (
+            <div className="mb-4 p-3 bg-rose/10 border border-rose/30 rounded-lg text-rose text-sm text-center">
+              {error}
+            </div>
+          )}
+
           <div id="google-signin-btn"></div>
           {!clientId && (
             <p className="text-center text-text-secondary text-sm mt-4">
@@ -57,10 +64,15 @@ export default function Login() {
         </div>
 
         <p className="text-center mt-6 text-text-secondary text-sm">
-          Don't have an account?{" "}
-          <Link to="/register" className="text-primary font-medium hover:text-primary-dark">
-            Sign Up
-          </Link>
+          Don't have a Google account?{" "}
+          <a
+            href="https://accounts.google.com/signup"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary font-medium hover:text-primary-dark"
+          >
+            Create one
+          </a>
         </p>
       </div>
     </div>

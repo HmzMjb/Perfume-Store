@@ -236,7 +236,6 @@ const seedDB = async () => {
 
     // Seed admin
     const adminEmail = process.env.ADMIN_EMAIL || "hamzamujeeb196@gmail.com";
-    const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
 
     let admin = await User.findOne({ email: adminEmail });
     if (!admin) {

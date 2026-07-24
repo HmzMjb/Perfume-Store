@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Search, ShoppingBag, Heart, User, Menu, X, LogOut, LayoutDashboard } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 
@@ -9,7 +9,9 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [wishlistCount, setWishlistCount] = useState(0);
   const [cartCount, setCartCount] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
 
   useEffect(() => {
@@ -208,22 +210,36 @@ export default function Navbar() {
               <input
                 type="text"
                 placeholder="Search for perfumes, brands, notes..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && searchQuery.trim()) {
+                    navigate(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
+                    setIsSearchOpen(false);
+                    setSearchQuery("");
+                  }
+                }}
                 className="w-full text-lg bg-transparent border-b-2 border-border focus:border-primary py-3 text-text-primary placeholder-text-light focus:outline-none transition-colors"
               />
               <button
-                onClick={() => setIsSearchOpen(false)}
+                onClick={() => { setIsSearchOpen(false); setSearchQuery(""); }}
                 className="p-2 text-text-secondary hover:text-text-primary transition-colors flex-shrink-0"
               >
                 <X size={22} />
               </button>
             </div>
             <div className="flex gap-2 mt-5">
-              {["Popular", "New Arrivals", "Best Sellers"].map((tag) => (
+              {[
+                { label: "Popular", path: "/products?sort=rating" },
+                { label: "New Arrivals", path: "/products?sort=newest" },
+                { label: "Best Sellers", path: "/products?sort=featured" },
+              ].map((tag) => (
                 <span
-                  key={tag}
+                  key={tag.label}
+                  onClick={() => { navigate(tag.path); setIsSearchOpen(false); setSearchQuery(""); }}
                   className="px-4 py-1.5 bg-bg-secondary rounded-full text-xs text-text-secondary hover:text-primary hover:bg-primary/5 cursor-pointer transition-colors"
                 >
-                  {tag}
+                  {tag.label}
                 </span>
               ))}
             </div>

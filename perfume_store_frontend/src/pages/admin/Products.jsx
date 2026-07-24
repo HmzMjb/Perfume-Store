@@ -2,6 +2,17 @@ import { useState, useEffect } from "react";
 import { Plus, Edit2, Trash2, Search, Upload, X, Link as LinkIcon } from "lucide-react";
 import Modal from "../../components/shared/Modal";
 
+const emptyForm = {
+  name: "", brand: "MAISON", gender: "men", category: "men",
+  description: "", image: "",
+  sizes: [{ ml: "50ml", price: "" }],
+  topNotes: "", middleNotes: "", baseNotes: "",
+  accords: "",
+  longevity: "Moderate", sillage: "Moderate",
+  season: "", occasion: "",
+  isNew: false, isFeatured: false,
+};
+
 export default function AdminProducts() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -10,12 +21,7 @@ export default function AdminProducts() {
   const [searchQuery, setSearchQuery] = useState("");
   const [uploading, setUploading] = useState(false);
   const [imageMode, setImageMode] = useState("upload");
-  const [formData, setFormData] = useState({
-    name: "", brand: "MAISON", gender: "men", category: "men",
-    description: "", image: "",
-    sizes: [{ ml: "50ml", price: "" }],
-    isNew: false, isFeatured: false,
-  });
+  const [formData, setFormData] = useState(emptyForm);
 
   const fetchProducts = async () => {
     try {
@@ -45,6 +51,14 @@ export default function AdminProducts() {
       category: product.category, description: product.description,
       image: product.image,
       sizes: sizesList.length > 0 ? sizesList : [{ ml: "50ml", price: "" }],
+      topNotes: product.notes?.top?.join(", ") || "",
+      middleNotes: product.notes?.middle?.join(", ") || "",
+      baseNotes: product.notes?.base?.join(", ") || "",
+      accords: product.accords?.join(", ") || "",
+      longevity: product.longevity || "Moderate",
+      sillage: product.sillage || "Moderate",
+      season: product.season?.join(", ") || "",
+      occasion: product.occasion?.join(", ") || "",
       isNew: product.isNew, isFeatured: product.isFeatured,
     });
     setImageMode("upload");
@@ -53,12 +67,7 @@ export default function AdminProducts() {
 
   const handleAdd = () => {
     setEditingProduct(null);
-    setFormData({
-      name: "", brand: "MAISON", gender: "men", category: "men",
-      description: "", image: "",
-      sizes: [{ ml: "50ml", price: "" }],
-      isNew: false, isFeatured: false,
-    });
+    setFormData({ ...emptyForm });
     setImageMode("upload");
     setShowModal(true);
   };
@@ -107,6 +116,9 @@ export default function AdminProducts() {
     });
   };
 
+  const parseCommaSeparated = (str) =>
+    str.split(",").map((s) => s.trim()).filter(Boolean);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem("token");
@@ -118,8 +130,17 @@ export default function AdminProducts() {
       name: formData.name, brand: formData.brand, gender: formData.gender,
       category: formData.category, description: formData.description,
       price, image: formData.image, images: [formData.image],
-      notes: { top: [], middle: [], base: [] },
-      accords: [], isNew: formData.isNew, isFeatured: formData.isFeatured,
+      notes: {
+        top: parseCommaSeparated(formData.topNotes),
+        middle: parseCommaSeparated(formData.middleNotes),
+        base: parseCommaSeparated(formData.baseNotes),
+      },
+      accords: parseCommaSeparated(formData.accords),
+      longevity: formData.longevity,
+      sillage: formData.sillage,
+      season: parseCommaSeparated(formData.season),
+      occasion: parseCommaSeparated(formData.occasion),
+      isNew: formData.isNew, isFeatured: formData.isFeatured,
     };
     try {
       if (editingProduct) {
@@ -151,6 +172,8 @@ export default function AdminProducts() {
     });
     fetchProducts();
   };
+
+  const inputClass = "w-full px-4 py-3 bg-bg-secondary border border-border rounded-lg focus:outline-none focus:border-primary";
 
   return (
     <div className="min-h-screen bg-bg-main">
@@ -234,18 +257,18 @@ export default function AdminProducts() {
         </div>
 
         <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editingProduct ? "Edit Product" : "Add Product"}>
-          <form className="space-y-4" onSubmit={handleSubmit}>
+          <form className="space-y-4 max-h-[70vh] overflow-y-auto pr-2" onSubmit={handleSubmit}>
             <div>
               <label className="block text-sm font-medium mb-2">Product Name</label>
               <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-4 py-3 bg-bg-secondary border border-border rounded-lg focus:outline-none focus:border-primary" required />
+                className={inputClass} required />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium mb-2">Category</label>
                 <select value={formData.gender} onChange={(e) => setFormData({ ...formData, gender: e.target.value, category: e.target.value })}
-                  className="w-full px-4 py-3 bg-bg-secondary border border-border rounded-lg focus:outline-none focus:border-primary">
+                  className={inputClass}>
                   <option value="men">Men</option>
                   <option value="women">Women</option>
                 </select>
@@ -269,7 +292,7 @@ export default function AdminProducts() {
               {imageMode === "url" ? (
                 <input type="text" value={formData.image} placeholder="https://example.com/image.jpg"
                   onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                  className="w-full px-4 py-3 bg-bg-secondary border border-border rounded-lg focus:outline-none focus:border-primary" />
+                  className={inputClass} />
               ) : (
                 <div>
                   {formData.image ? (
@@ -330,10 +353,91 @@ export default function AdminProducts() {
             <div>
               <label className="block text-sm font-medium mb-2">Description</label>
               <textarea rows={3} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="w-full px-4 py-3 bg-bg-secondary border border-border rounded-lg focus:outline-none focus:border-primary resize-none" required />
+                className={`${inputClass} resize-none`} required />
             </div>
 
-            <div className="flex gap-4">
+            {/* Fragrance Notes */}
+            <div className="space-y-4 pt-2 border-t border-border">
+              <h3 className="text-sm font-semibold text-text-primary">Fragrance Notes</h3>
+              <div>
+                <label className="block text-sm font-medium mb-2">Top Notes</label>
+                <input type="text" value={formData.topNotes}
+                  onChange={(e) => setFormData({ ...formData, topNotes: e.target.value })}
+                  placeholder="Bergamot, Lemon, Pink Pepper"
+                  className={inputClass} />
+                <p className="text-xs text-text-light mt-1">Comma separated</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Middle Notes</label>
+                <input type="text" value={formData.middleNotes}
+                  onChange={(e) => setFormData({ ...formData, middleNotes: e.target.value })}
+                  placeholder="Rose, Jasmine, Lavender"
+                  className={inputClass} />
+                <p className="text-xs text-text-light mt-1">Comma separated</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Base Notes</label>
+                <input type="text" value={formData.baseNotes}
+                  onChange={(e) => setFormData({ ...formData, baseNotes: e.target.value })}
+                  placeholder="Sandalwood, Vanilla, Musk"
+                  className={inputClass} />
+                <p className="text-xs text-text-light mt-1">Comma separated</p>
+              </div>
+            </div>
+
+            {/* Fragrance Details */}
+            <div className="space-y-4 pt-2 border-t border-border">
+              <h3 className="text-sm font-semibold text-text-primary">Fragrance Details</h3>
+              <div>
+                <label className="block text-sm font-medium mb-2">Accords / Scent Family</label>
+                <input type="text" value={formData.accords}
+                  onChange={(e) => setFormData({ ...formData, accords: e.target.value })}
+                  placeholder="Woody, Floral, Fresh"
+                  className={inputClass} />
+                <p className="text-xs text-text-light mt-1">Comma separated</p>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Longevity</label>
+                  <select value={formData.longevity}
+                    onChange={(e) => setFormData({ ...formData, longevity: e.target.value })}
+                    className={inputClass}>
+                    <option value="Light">Light</option>
+                    <option value="Moderate">Moderate</option>
+                    <option value="Long Lasting">Long Lasting</option>
+                    <option value="Very Long Lasting">Very Long Lasting</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Sillage</label>
+                  <select value={formData.sillage}
+                    onChange={(e) => setFormData({ ...formData, sillage: e.target.value })}
+                    className={inputClass}>
+                    <option value="Light">Light</option>
+                    <option value="Moderate">Moderate</option>
+                    <option value="Strong">Strong</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Season</label>
+                <input type="text" value={formData.season}
+                  onChange={(e) => setFormData({ ...formData, season: e.target.value })}
+                  placeholder="Spring, Summer, Fall"
+                  className={inputClass} />
+                <p className="text-xs text-text-light mt-1">Comma separated</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Occasion</label>
+                <input type="text" value={formData.occasion}
+                  onChange={(e) => setFormData({ ...formData, occasion: e.target.value })}
+                  placeholder="Casual, Formal, Date Night"
+                  className={inputClass} />
+                <p className="text-xs text-text-light mt-1">Comma separated</p>
+              </div>
+            </div>
+
+            <div className="flex gap-4 pt-2">
               <label className="flex items-center gap-2">
                 <input type="checkbox" checked={formData.isNew} onChange={(e) => setFormData({ ...formData, isNew: e.target.checked })} className="accent-primary" />
                 <span className="text-sm">New Arrival</span>
@@ -344,7 +448,7 @@ export default function AdminProducts() {
               </label>
             </div>
 
-            <div className="flex gap-3 pt-4">
+            <div className="flex gap-3 pt-4 sticky bottom-0 bg-white pb-2">
               <button type="button" onClick={() => setShowModal(false)}
                 className="flex-1 py-3 border border-border rounded-full font-medium text-text-secondary hover:bg-bg-tertiary transition-colors">
                 Cancel

@@ -9,7 +9,7 @@ const router = express.Router();
 // POST /api/orders
 router.post("/", auth, async (req, res) => {
   try {
-    const { items, shippingAddress } = req.body;
+    const { items, shippingAddress, paymentMethod } = req.body;
 
     if (!items || items.length === 0) {
       return res.status(400).json({ message: "No order items" });
@@ -19,6 +19,8 @@ router.post("/", auth, async (req, res) => {
     const shipping = subtotal > 150 ? 0 : 10;
     const total = subtotal + shipping;
 
+    const method = paymentMethod === "online" ? "online" : "cod";
+
     const order = await Order.create({
       user: req.user._id,
       items,
@@ -26,6 +28,8 @@ router.post("/", auth, async (req, res) => {
       subtotal,
       shipping,
       total,
+      paymentMethod: method,
+      paymentStatus: method === "cod" ? "paid" : "pending",
     });
 
     // Clear user cart after order
@@ -83,6 +87,28 @@ router.put("/:id", auth, admin, async (req, res) => {
       return res.status(404).json({ message: "Order not found" });
     }
     res.json(order);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+// PUT /api/orders/:id/cancel
+router.put("/:id/cancel", auth, async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+    if (order.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+    if (order.status !== "Processing") {
+      return res.status(400).json({ message: "Only Processing orders can be cancelled" });
+    }
+    order.status = "Cancelled";
+    await order.save();
+    const populated = await order.populate("items.product");
+    res.json(populated);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }

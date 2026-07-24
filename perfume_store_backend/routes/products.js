@@ -25,9 +25,15 @@ router.get("/", async (req, res) => {
     }
 
     if (minPrice || maxPrice) {
-      query["price"] = {};
-      if (minPrice) query["price.$expr"] = { $gte: ["$$this", Number(minPrice)] };
-      if (maxPrice) query["price.$expr"] = { $lte: ["$$this", Number(maxPrice)] };
+      const allProducts = await Product.find(query).sort(sortOption);
+      const min = Number(minPrice) || 0;
+      const max = Number(maxPrice) || Infinity;
+      const filtered = allProducts.filter((p) => {
+        const prices = Object.values(p.price.toObject ? p.price.toObject() : p.price);
+        const lowestPrice = Math.min(...prices);
+        return lowestPrice >= min && lowestPrice <= max;
+      });
+      return res.json(filtered);
     }
 
     let sortOption = {};

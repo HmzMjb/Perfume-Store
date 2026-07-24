@@ -7,6 +7,8 @@ import { accordFilters } from "../../data/products";
 export default function Products() {
   const [searchParams] = useSearchParams();
   const genderFilter = searchParams.get("gender");
+  const searchQuery = searchParams.get("search");
+  const sortParam = searchParams.get("sort");
 
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -15,12 +17,18 @@ export default function Products() {
   const [selectedAccords, setSelectedAccords] = useState([]);
   const [priceRange, setPriceRange] = useState([0, 500]);
   const [showAll, setShowAll] = useState(true);
-  const [sortBy, setSortBy] = useState("featured");
+  const [sortBy, setSortBy] = useState(sortParam || "featured");
 
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await fetch("/api/products");
+        const params = new URLSearchParams();
+        if (genderFilter && genderFilter !== "all") params.set("gender", genderFilter);
+        if (searchQuery) params.set("search", searchQuery);
+        if (sortParam) params.set("sort", sortParam);
+
+        const url = `/api/products${params.toString() ? `?${params.toString()}` : ""}`;
+        const res = await fetch(url);
         const data = await res.json();
         setProducts(data);
       } catch (err) {
@@ -30,11 +38,12 @@ export default function Products() {
       }
     };
     fetchProducts();
-  }, []);
+  }, [genderFilter, searchQuery, sortParam]);
 
   useEffect(() => {
     setSelectedGender(genderFilter || "all");
-  }, [genderFilter]);
+    if (sortParam) setSortBy(sortParam);
+  }, [genderFilter, sortParam]);
 
   const filteredProducts = products.filter((p) => {
     if (selectedGender !== "all" && p.gender !== selectedGender) return false;
@@ -71,7 +80,9 @@ export default function Products() {
       <div className="bg-bg-secondary py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h1 className="font-heading text-4xl text-center">
-            {selectedGender === "men"
+            {searchQuery
+              ? `Results for "${searchQuery}"`
+              : selectedGender === "men"
               ? "Men's Collection"
               : selectedGender === "women"
               ? "Women's Collection"

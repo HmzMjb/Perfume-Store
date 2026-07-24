@@ -32,8 +32,11 @@ router.post("/google", async (req, res) => {
         email,
         googleId: sub,
         avatar: picture,
-        password: undefined,
       });
+    } else if (!user.googleId) {
+      user.googleId = sub;
+      if (picture && !user.avatar) user.avatar = picture;
+      await user.save();
     }
 
     res.json({

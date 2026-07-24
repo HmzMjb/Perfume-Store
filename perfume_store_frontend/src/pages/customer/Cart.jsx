@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Trash2, Minus, Plus, ShoppingBag, ArrowLeft } from "lucide-react";
+import { useToast } from "../../context/ToastContext";
 
 export default function Cart() {
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { showToast } = useToast();
 
   const fetchCart = async () => {
     const token = localStorage.getItem("token");
@@ -31,6 +33,11 @@ export default function Cart() {
 
   const updateQuantity = async (itemId, newQuantity) => {
     if (newQuantity < 1) return;
+    setCartItems((prev) =>
+      prev.map((item) =>
+        item._id === itemId ? { ...item, quantity: newQuantity } : item
+      )
+    );
     const token = localStorage.getItem("token");
     try {
       const res = await fetch(`/api/cart/${itemId}`, {
@@ -44,6 +51,7 @@ export default function Cart() {
       }
     } catch (err) {
       console.error(err);
+      fetchCart();
     }
   };
 
@@ -57,6 +65,7 @@ export default function Cart() {
       if (res.ok) {
         const data = await res.json();
         setCartItems(data);
+        showToast("Item removed from cart");
       }
     } catch (err) {
       console.error(err);
@@ -122,7 +131,7 @@ export default function Cart() {
                           <Plus size={14} />
                         </button>
                       </div>
-                      <p className="font-medium">${item.product?.price?.[item.size] * item.quantity}</p>
+                      <p className="font-medium">${(item.product?.price?.[item.size] * item.quantity).toFixed(2)}</p>
                     </div>
                   </div>
                 </div>
@@ -139,7 +148,7 @@ export default function Cart() {
               <div className="space-y-4 mb-6">
                 <div className="flex justify-between text-text-secondary">
                   <span>Subtotal</span>
-                  <span>${subtotal}</span>
+                  <span>${subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-text-secondary">
                   <span>Shipping</span>
